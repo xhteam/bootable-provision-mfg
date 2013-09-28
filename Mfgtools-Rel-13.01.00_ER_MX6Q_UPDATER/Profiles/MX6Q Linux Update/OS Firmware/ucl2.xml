@@ -182,7 +182,6 @@
 	<CMD state="Updater" type="push" body="$ echo 1 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">access boot partition 1</CMD>
 	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-6q.bin">Sending U-Boot</CMD>
 	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
-
 	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">access user partition and enable boot partion 1 to boot</CMD>
 	<CMD state="Updater" type="push" body="send" file="mksdcard-android.sh.tar">Sending partition shell</CMD>
 	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
