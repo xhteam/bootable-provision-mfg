@@ -215,6 +215,52 @@
 	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
 </LIST>
 
+<LIST name="Android-QPad-eMMC" desc="Choose eMMC android as media">
+  <!-- Android Profile: -->
+	<CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6q-sabresd.bin" >Loading U-boot</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/splash.img">Sending Splash</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=8192">write Splash to sd card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 1 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">access boot partition 1</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-6q.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">access user partition and enable boot partion 1 to boot</CMD>
+	<CMD state="Updater" type="push" body="send" file="mksdcard-android.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard-android.sh /dev/mmcblk0"> Partitioning...</CMD>
+
+	<CMD state="Updater" type="push" body="$ ls -l /dev/mmc* ">Formatting sd partition</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0p1">write boot.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 -b 4096 -m 0 /dev/mmcblk0p4">Formatting data partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="mk-encryptable-data-android.sh.tar">Sending data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE ">Extracting data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ sh mk-encryptable-data-android.sh /dev/mmcblk0 /dev/mmcblk0p4">Making data encryptable</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p5">Formatting system partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p6">Formatting cache partition</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p7">Formatting device partition</CMD>
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p5 bs=512" file="files/android/system.img">Sending and writting system.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<!-- Write userdata.img is optional, for some customer this is needed, but it's optional. -->
+	<!-- Also, userdata.img will have android unit test, you can use this to do some auto test. -->
+<!--	<CMD state="Updater" type="push" onError="ignore" body="pipe dd of=/dev/mmcblk0p7" file="file/android/userdate.img"> Sending userdata.img(optional) </CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>  -->
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p2 bs=512" file="files/android/recovery.img">Sending and writting recovery.img</CMD>
+
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
 
 <LIST name="Android-SabreSD-eMMC-Kernel" desc="Only Download Android Kernel image">
   <!-- Android Profile: -->
