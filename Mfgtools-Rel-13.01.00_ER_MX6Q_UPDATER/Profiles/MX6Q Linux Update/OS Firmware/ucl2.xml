@@ -223,11 +223,6 @@
     <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
         loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
     <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
-    <CMD state="Updater" type="push" body="$ ls -la /sys/fsl_otp ">Showing HW_OCOTP fuse bank</CMD>
-    <CMD state="Updater" type="push" body="$ echo 0x00005860 > /sys/fsl_otp/HW_OCOTP_CFG4">write 0x00005860 to HW_OCOTP_CFG4 fuse bank</CMD>
-    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG4">Read value from HW_OCOTP_CFG4 fuse bank</CMD>
-    <CMD state="Updater" type="push" body="$ echo 0x00000010 > /sys/fsl_otp/HW_OCOTP_CFG5">write 0x00000010 to HW_OCOTP_CFG5 fuse bank</CMD>
-    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG5">Read value from HW_OCOTP_CFG5 fuse bank</CMD>
 	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
 	<CMD state="Updater" type="push" body="send" file="files/android/splash.img">Sending Splash</CMD>
 	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=8192">write Splash to sd card</CMD>
