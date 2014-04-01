@@ -281,6 +281,25 @@
 	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
 </LIST>
 
+<LIST name="TDH-V1-FuseOTP" desc="Write otp register (Board ID,revision,Boot option)">
+  <!-- Android Profile: -->
+	<CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6q-sabresd.bin" >Loading U-boot</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="$ ls -la /sys/fsl_otp ">Showing HW_OCOTP fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x0000c100 > /sys/fsl_otp/HW_OCOTP_GP1">write 0x0000c100 to HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_GP1">Read value from HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00005860 > /sys/fsl_otp/HW_OCOTP_CFG4">write 0x00005860 to HW_OCOTP_CFG4 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG4">Read value from HW_OCOTP_CFG4 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00000010 > /sys/fsl_otp/HW_OCOTP_CFG5">write 0x00000010 to HW_OCOTP_CFG5 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG5">Read value from HW_OCOTP_CFG5 fuse bank</CMD>
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
 <LIST name="Android-SabreSD-eMMC-Kernel" desc="Only Download Android Kernel image">
   <!-- Android Profile: -->
   <!-- This profile only download kernel image. -->
