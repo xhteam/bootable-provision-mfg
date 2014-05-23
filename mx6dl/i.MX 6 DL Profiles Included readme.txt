@@ -1,0 +1,52 @@
+These are the profiels supported by this release of th MFG TOOL, to enable the profile update the name and board tags of the cfg.ini file with the name and board listed.
+
+board=SabreSD
+name=i.MX6DL-ubuntu-SabreSD-eMMC
+Description:Download the u-boot, kernel and Ubuntu rootfs to the eMMC
+
+
+board=SabreSD
+name=i.MX6DL-ubuntu-SabreSD-SD
+Description:Download the u-boot, kernel and Ubuntu rootfs to the SD
+
+
+board=SabreSD
+name=i.MX6DL-SABRESD-eMMC
+Description:Download the u-boot, kernel and Linux rootfs to the eMMC
+
+
+board=SabreSD
+name=i.MX6DL-SABRESD-SD
+Description:Download the u-boot, kernel and Linux rootfs to the SD
+
+
+board=SabreARD
+name=MX6DL-Sabreauto-SPI_NOR & SD card
+Description:Download the u-boot to the SPI NOR and the Kernel and the Linux rootfs to the SD
+
+
+board=SabreARD
+name=MX6DL-Sabreauto-Parallel_NOR
+Description:Download the u-boot, kernel and Linux rootfs to the Parallel NOR
+
+
+board=SabreARD
+name=MX6DL-Sabreauto-NAND
+Description:Download the u-boot, kernel and Linux rootfs to the NAND
+
+
+board=SabreARD
+name=MX6SOLO-Sabreauto-SPI_NOR & SD card
+Description:Download the u-boot to the SPI NOR and the Kernel and the Linux rootfs to the SD
+
+
+board=SabreARD
+name=MX6SOLO-Sabreauto-Parallel_NOR
+Description:Download the u-boot, kernel and Linux rootfs to the Parallel NOR
+
+
+board=SabreARD
+name=MX6SOLO-Sabreauto-NAND
+Description:Download the u-boot, kernel and Linux rootfs to the NAND
+
+

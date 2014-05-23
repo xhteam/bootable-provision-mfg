@@ -1,0 +1,1015 @@
+<!--
+* Copyright (C) 2010-2013, Freescale Semiconductor, Inc. All Rights Reserved.
+* The CFG element contains a list of recognized usb devices.
+*  DEV elements provide a name, class, vid and pid for each device.
+*
+* Each LIST element contains a list of update instructions.
+*  "Install" - Erase media and install firmware.
+*  "Update" - Update firmware only.
+*
+* Each CMD element contains one update instruction of attribute type.
+*  "pull" - Does UtpRead(body, file) transaction.
+*  "push" - Does UtpWrite(body, file) transaction.
+*  "drop" - Does UtpCommand(body) then waits for device to disconnect.
+*  "boot" - Finds configured device, forces it to "body" device and downloads "file".
+*  "find" - Waits for "timeout" seconds for the "body" device to connect.
+*  "show" - Parse and show device info in "file".  
+-->
+
+
+<UCL>
+  <CFG>
+	<STATE name="BootStrap" dev="MX6D" vid="15A2" pid="0061"/>
+	<STATE name="Updater"   dev="MSC" vid="066F" pid="37FF"/> 
+  </CFG>
+<!--
+  The following Lists are for i.MX6Solo/DualLite chips
+-->
+
+<LIST name="i.MX6DL-ubuntu-SabreSD-eMMC" desc="Choose eMMC android as media">
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="$ echo 0 > /sys/block/mmcblk0boot0/force_ro">access boot partition 1</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabresd.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0boot0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 1 > /sys/block/mmcblk0boot0/force_ro"> re-enable read-only access</CMD>
+	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">enable boot partion 1 to boot</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+	
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk0"> Partitioning...</CMD>
+
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk0p1">Formatting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/> 
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk0p1 /mnt/mmcblk0p1"/>
+    <CMD state="Updater" type="push" body="pipe tar --numeric-owner -zxv -C /mnt/mmcblk0p1" file="files/oneiric.tgz">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1">Unmounting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+  <LIST name="i.MX6DL-ubuntu-SabreSD-SD" desc="Choose eMMC android as media">
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+	
+	<CMD state="Updater" type="push" body="$ ls /dev/*"/>
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk1 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabresd.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+	
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk1"> Partitioning...</CMD>
+
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk1p1">Formatting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk1p1"/> 
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk1p1 /mnt/mmcblk1p1"/>
+    <CMD state="Updater" type="push" body="pipe tar --numeric-owner -zxv -C /mnt/mmcblk1p1" file="files/oneiric.tgz">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk1p1">Unmounting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+<LIST name="i.MX6Solo/DL-ARM2-SD" desc="Choose SD as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+    <CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk0"> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-arm2.bin">Sending u-boot.bin</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1k seek=1 skip=1 conv=fsync">write u-boot.bin to sd card</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk0p1">Formatting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/> 
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk0p1 /mnt/mmcblk0p1"/>
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk0p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1">Unmounting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+</LIST>
+
+<LIST name="Android-HDMIDongle-NAND-extsd" desc="Choose NAND as media">
+    <CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+    <CMD state="BootStrap" type="boot" body="Recovery" file ="u-boot-mx6dl-hdmidongle-nand.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage-hdmidongle-mfg-nand" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+    <CMD state="BootStrap" type="find" body="Updater" timeout="180"/>
+<!--
+    Please use "cat /proc/mtd" to check the right partitions for NAND
+-->
+	<CMD state="Updater" type="push" body="$ ls -la /sys/fsl_otp ">Showing HW_OCOTP fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00006300 > /sys/fsl_otp/HW_OCOTP_GP1">write 0x00006300 to HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_GP1">Read value from HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ ls -l /dev/mtd*">List MTD partition</CMD>
+    <CMD state="Updater" type="push" body="$ cat /proc/mtd ">Cat MTD partition</CMD>
+    <CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd0">Erasing Boot partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/android/u-boot.bin">Sending U-Boot</CMD>
+    <CMD state="Updater" type="push" body="$ kobs-ng init $FILE">write U-Boot to NAND</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing U-Boot write</CMD>
+    <CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd1">Erasing Kernel partition</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing Kernel partition Erasing</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending Kernel Image</CMD>
+    <CMD state="Updater" type="push" body="$ nandwrite -p /dev/mtd1 $FILE">Flashing Kernel</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing Kernel write</CMD>
+    <CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd2">Erasing Recovery partition</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing Recovery partition Erasing</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/android/recovery.img">Sending recovery Image</CMD>
+    <CMD state="Updater" type="push" body="$ nandwrite -p /dev/mtd2 $FILE">Flashing recovery</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing recovery write</CMD>
+    <CMD state="Updater" type="push" body="pipe ubiformat -y /dev/mtd3 -f - -S @FILESIZE"
+        file="files/android/android_root.img"> Programming Android Root partition </CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing Android Root partition write</CMD>
+    <CMD state="Updater" type="push" body="$ ubiattach /dev/ubi_ctrl -m 3">Attaching UBI partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/ubi2; mount -t ubifs ubi0_2 /mnt/ubi2" />
+    <CMD state="Updater" type="push" body="$ rm /mnt/ubi2/* -rf" />
+    <CMD state="Updater" type="push" body="$ umount /mnt/ubi2" />
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+<!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+-->
+</LIST>
+
+ <LIST name="i.MX6Solo/DL-ARM2-SPI-NOR" desc="Choose SPI-NOR as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD> -->
+    <!--
+      Please use "cat /proc/mtd" to check the right partitions for NAND
+      In MX6 ARM2, mtd0 and mtd1 are for SPI-NOR; mtd2 - mtd6 are for NAND
+    -->
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+    <CMD state="Updater" type="push" body="$ mount">Erasing Boot partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-arm2.bin">Sending U-Boot</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd0 bs=512">write U-Boot to SPI-NOR</CMD>
+<!--    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd1 0 0">Erasing Kernel partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending Kernel Image</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd1 bs=512">Flashing Kernel</CMD> -->
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD> 
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+ </LIST>
+
+<!--
+  Because NAND conflicts with SD on ARM2 CPU board, NAND is not enabled into ARM2 by default.
+  So the following seciton only provides the example how to use MFG tool to do NAND programming.
+Notes for U-Boot/Kernel for MFG tool (under MX6DL Linux Update\OS Firmware\):
+  The kernel image was built seperately with the following configuration enabled 
+  "Driver->MTD->NAND Device Support-> GPMI NAND Flash Controller driver" and 
+  "Device Drivers > DMA Engine support > MXS DMA support".
+  Meanwhile disable SPI via uncheck "
+  Driver->MTD->Self-contained MTD device drivers->Support most SPI Flash chips (AT26DF, M25P, W25X, ...)".
+  So mtd number starts from 0 for NAND in this example
+  Disable MMC/SD via uncheck ¡°Driver->MMC/SD/SDIO card support¡±
+  The hash number to build mfg kernel in this example was: 56264cb98cc8736cab57
+  The user should rebuilt mfg kernel image again if the kernel image is changed. 
+  u-boot-mx6dl-nand.bin was built by adding NAND boot parameter: 
+diff --git a/include/configs/mx6dl_arm2_mfg.h b/include/configs/mx6dl_arm2_mfg.h
+index 4baf4c6..4001958 100644
+--- a/include/configs/mx6dl_arm2_mfg.h
++++ b/include/configs/mx6dl_arm2_mfg.h
+@@ -113,8 +113,12 @@
+ #define CONFIG_LOADADDR                0x10800000      /* loadaddr env var */
+ #define CONFIG_RD_LOADADDR     (CONFIG_LOADADDR + 0x300000)
+
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
++       "mtdparts=gpmi-nand:20m(boot),20m(kernel),1024m(rootfs),-(user) "\
++       "gpmi_debug_init enable_wait_mode=off"
+  Regarding the detailed information about NAND, please read ARM2 User guide.
+
+Notes for the files to be programmed:
+  Please upload the files to be programmed under MX6DL Linux Update\OS Firmware\files
+   u-boot-mx6dl-nand.bin
+   uImage-nand 
+-->
+<!--
+<LIST name="i.MX6Solo/DL-ARM2-NAND" desc="Choose NAND as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-nand.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage-mfg-nand" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD> -->
+    <!--
+      Please use "cat /proc/mtd" to check the right partitions for NAND
+    -->
+<!--    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-nand.bin">Sending U-Boot</CMD>
+    <CMD state="Updater" type="push" body="$ kobs-ng init $FILE">write U-Boot to NAND</CMD>
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd1 0 0">Erasing Kernel partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage-nand">Sending Kernel Image</CMD>
+    <CMD state="Updater" type="push" body="$ nandwrite -p /dev/mtd1 $FILE">Flashing Kernel</CMD>
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd2 0 0">Erasing rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ ubiattach /dev/ubi_ctrl -m 2">ubiattach</CMD>
+    <CMD state="Updater" type="push" body="$ ubimkvol /dev/ubi0 -N rootfs -m">ubimkvol</CMD>    
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/ubi0; mount -t ubifs ubi0:rootfs /mnt/ubi0">mount</CMD>
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/ubi0" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/ubi0"/>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD> -->
+ <!--
+     <CMD type="push" body="$ ubidetach /dev/ubi_ctrl -m 2"/>
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+<!--</LIST>-->
+
+<!--
+   The following lists are for i.MX6Solo SABRE AUTO boards
+   To enter serail download mode, set the dips as the following:
+   - S3 (Boot Mode): Dip 2 - ON, Others - Off
+
+   To boot from SD card slot in CPU board:
+   - S3 (Boot Mode): Dip 3 -ON, others - Off
+   - S2: Dip 3 - ON, Others - Off
+   - S1: Dip 5 - ON, Others - Off
+   
+   To boot from MMC card in CPU board:
+   - S3 (Boot Mode): Dip 3 -ON, others - Off
+   - S2: Dip 2, 3 - ON, others - Off
+   - S1: Dip 5 - ON, Others - Off
+-->
+<!--
+<LIST name="i.MX6Solo-SABREAUTO-SD" desc="Choose SD as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6solo-sabreauto.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+    <CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk0"> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabreauto.bin">Sending u-boot.bin</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1k seek=1 skip=1 conv=fsync">write u-boot.bin to sd card</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk0p1">Formatting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/> 
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk0p1 /mnt/mmcblk0p1"/>
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk0p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1">Unmounting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD> -->
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+<!-- </LIST> -->
+<!--
+   To enable SPI-NOR boot, Short PIN2-PIN3 of the jumper J3 on CPU board.
+   To boot from SPI-NOR:
+   - S3 (Boot Mode): Dip 3 -ON, others - Off
+   - S2: Dip 1, 2 -ON, others - Off
+   SPI-NOR conflict with I2C3, Parallel NOR.
+   You should make MX6DL_PAD_EIM_D18__I2C3_SDA and I2C3 relative codes does not take effect when
+   using SPI-NOR.
+-->
+<!--
+<LIST name="i.MX6Solo-SABREAUTO-SPI-NOR" desc="Choose SPI-NOR as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6solo-sabreauto.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage-mfg-spi-nor" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabreauto.bin">Sending U-Boot</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd0 bs=512">write U-Boot to SPI-NOR</CMD>
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd1 0 0">Erasing Kernel partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending Kernel Image</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd1 bs=512">Flashing Kernel</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD> -->
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+<!-- </LIST> -->
+<!--
+    Please refer to "i.MX6Solo/DL-ARM2-NAND" profile to built NAND relative images
+Notes for U-Boot/Kernel for MFG tool (under MX6DL Linux Update\OS Firmware\):
+  The kernel image was built seperately with the following configuration enabled 
+  "Driver->MTD->NAND Device Support-> GPMI NAND Flash Controller driver" and 
+  "Device Drivers > DMA Engine support > MXS DMA support".
+  Meanwhile disable SPI via uncheck "
+  Driver->MTD->Self-contained MTD device drivers->Support most SPI Flash chips (AT26DF, M25P, W25X, ...)".
+  So mtd number starts from 0 for NAND in this example
+  Disable MMC/SD via uncheck ¡°Driver->MMC/SD/SDIO card support¡±
+  The hash number to build mfg kernel in this example was: fbd42515eb8beaef
+  The user should rebuilt mfg kernel image again if the kernel image is changed. 
+  u-boot-mx6solo-sabreauto-nand.bin was built by adding NAND boot parameter: 
+diff --git a/include/configs/mx6solo_sabreauto_mfg.h b/include/configs/mx6solo_s
+index 0e29229..7b094d0 100644
+--- a/include/configs/mx6solo_sabreauto_mfg.h
++++ b/include/configs/mx6solo_sabreauto_mfg.h
+@@ -115,7 +115,9 @@
+ #define CONFIG_LOADADDR                0x10800000      /* loadaddr env var */
+ #define CONFIG_RD_LOADADDR     (CONFIG_LOADADDR + 0x300000)
+
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
++       "mtdparts=gpmi-nand:20m(boot),20m(kernel),1024m(rootfs),-(user) "\
++       "gpmi_debug_init"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+
+  Regarding the detailed information about NAND, please read SABRE AUTO User guide.
+
+Notes for the files to be programmed:
+  Please upload the files to be programmed under MX6DL Linux Update\OS Firmware\files
+   u-boot-mx6solo-sabreauto-nand.bin
+   uImage-nand
+   
+   To boot from NAND, set the dips as the following:
+   - S3 (Boot Mode): Dip 3 -ON, others - Off
+   - S2: Dip 4 - ON, Others - Off
+   - S1: Dip 4 - ON, Others - Off    
+-->
+<!--
+<LIST name="i.MX6Solo-SABREAUTO-NAND" desc="Choose NAND as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6solo-sabreauto-nand.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage-mfg-nand" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD> -->
+    <!--
+      Please use "cat /proc/mtd" to check the right partitions for NAND
+    -->
+<!--    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabreauto-nand.bin">Sending U-Boot</CMD>
+    <CMD state="Updater" type="push" body="$ kobs-ng init $FILE">write U-Boot to NAND</CMD>
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd1 0 0">Erasing Kernel partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage-nand">Sending Kernel Image</CMD>
+    <CMD state="Updater" type="push" body="$ nandwrite -p /dev/mtd1 $FILE">Flashing Kernel</CMD>
+    <CMD state="Updater" type="push" body="$ flash_erase /dev/mtd2 0 0">Erasing rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ ubiattach /dev/ubi_ctrl -m 2">ubiattach</CMD>
+    <CMD state="Updater" type="push" body="$ ubimkvol /dev/ubi0 -N rootfs -m">ubimkvol</CMD>    
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/ubi0; mount -t ubifs ubi0:rootfs /mnt/ubi0">mount</CMD>
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/ubi0" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/ubi0"/> -->
+ <!--
+     <CMD type="push" body="$ ubidetach /dev/ubi_ctrl -m 2"/>
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+<!-- </LIST> -->
+
+<!--
+   The following lists are for i.MX6DL SABRE SD boards
+   There is no dedicate boot dips for serial download mode. So you have to use trickle mode
+   to enter serail download mode. For example, set boot mode as SD3 boot (SW6 dip 2, 7 On,
+   others off). Don't insert SD card into SD3 slot. Then power on the boards. After "HID-
+   Compliant device" is detected, insert SD card for the programming.
+   
+   To boot from SD3 (J507)
+   SW6: Dip 2, 7 - ON, Others - Off.
+   
+   To boot from SD2 (J500)
+   SW6: Dip 1, 7 - ON, Others - Off.
+
+   To boot from SDIN5C2-8G via SD4
+   SW6: Dip 1, 2, 4, 6, 7 - ON, others -Off   
+   
+-->
+<LIST name="i.MX6DL-SABRESD-SD" desc="Choose SD as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+    <CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk1"> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabresd.bin">Sending u-boot.bin</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=1k seek=1 skip=1 conv=fsync">write u-boot.bin to sd card</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk1p1">Formatting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk1p1"/> 
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk1p1 /mnt/mmcblk1p1"/>
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk1p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk1p1">Unmounting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+</LIST>
+
+
+<LIST name="i.MX6DL-SABRESD-eMMC" desc="Choose eMMC Linux as media"> 
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD> 
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000" 
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD> 
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000" 
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD> 
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD> 
+     
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="$ echo 0 > /sys/block/mmcblk0boot0/force_ro">access boot partition 1</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabresd.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0boot0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 1 > /sys/block/mmcblk0boot0/force_ro"> re-enable read-only access</CMD>
+	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">enable boot partion 1 to boot</CMD>
+
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD> 
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD> 
+     
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD> 
+    <CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD> 
+    <CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk0"> Partitioning...</CMD> 
+ 
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk0p1">Formatting rootfs partition</CMD> 
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/>  
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk0p1 /mnt/mmcblk0p1"/> 
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk0p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD> 
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD> 
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1">Unmounting rootfs partition</CMD> 
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD> 
+</LIST>
+
+<!--
+   The following lists are for i.MX6Solo SABRE SD boards
+   There is no dedicate boot dips for serial download mode. So you have to use trickle mode
+   to enter serail download mode. For example, set boot mode as SD3 boot (SW6 dip 2, 7 On,
+   others off). Don't insert SD card into SD3 slot. Then power on the boards. After "HID-
+   Compliant device" is detected, insert SD card for the programming.
+   
+   To boot from SD3 (J507)
+   SW6: Dip 2, 7 - ON, Others - Off.
+   
+   To boot from SD2 (J500)
+   SW6: Dip 1, 7 - ON, Others - Off.
+
+   To boot from SDIN5C2-8G via SD4
+   SW6: Dip 1, 2, 4, 6, 7 - ON, others -Off   
+   
+-->
+<LIST name="i.MX6SOLO-SABRESD-SD" desc="Choose SD as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6solo-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+    <CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk1"> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabresd.bin">Sending u-boot.bin</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=1k seek=1 skip=1 conv=fsync">write u-boot.bin to sd card</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+    <CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk1p1">Formatting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk1p1"/> 
+    <CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk1p1 /mnt/mmcblk1p1"/>
+    <CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk1p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk1p1">Unmounting rootfs partition</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+</LIST>
+
+<LIST name="Android-SabreSD-eMMC" desc="Choose eMMC as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+<!--
+    <CMD state="Updater" type="push" body="$ ls -la /sys/fsl_otp ">Dumping HW_OCOTP fuse bank options</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x0000b200 > /sys/fsl_otp/HW_OCOTP_GP1">write 0x0000b200 to HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_GP1">Read value from HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00005860 > /sys/fsl_otp/HW_OCOTP_CFG4">write 0x00005860 to HW_OCOTP_CFG4 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG4">Read value from HW_OCOTP_CFG4 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00000010 > /sys/fsl_otp/HW_OCOTP_CFG5">write 0x00000010 to HW_OCOTP_CFG5 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG5">Read value from HW_OCOTP_CFG5 fuse bank</CMD>
+-->
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/splash.img">Sending Splash</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=8192">write Splash to SD card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 0 > /sys/block/mmcblk0boot0/force_ro">access boot partition 1</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-6dl.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0boot0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 1 > /sys/block/mmcblk0boot0/force_ro"> re-enable read-only access</CMD>
+	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">enable boot partion 1 to boot</CMD>
+	
+	<CMD state="Updater" type="push" body="send" file="mksdcard-android.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard-android.sh /dev/mmcblk0"> Partitioning...</CMD>
+
+	<CMD state="Updater" type="push" body="$ ls -l /dev/mmc*;cat /proc/partitions ">Formatting sd partition</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0p1">write boot.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 -b 4096 -m 0 /dev/mmcblk0p4">Formatting data partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="mk-encryptable-data-android.sh.tar">Sending data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE ">Extracting data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ sh mk-encryptable-data-android.sh /dev/mmcblk0 /dev/mmcblk0p4">Making data encryptable</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p5">Formatting system partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p6">Formatting cache partition</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p7">Formatting device partition</CMD>
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p5 bs=512" file="files/android/system.img">Sending and writting system.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<!-- Write userdata.img is optional, for some customer this is needed, but it's optional. -->
+	<!-- Also, userdata.img will have android unit test, you can use this to do some auto test. -->
+<!--
+	<CMD state="Updater" type="push" onError="ignore" body="pipe dd of=/dev/mmcblk0p7" file="file/android/userdate.img"> Sending userdata.img(optional) </CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+-->
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p2 bs=512" file="files/android/recovery.img">Sending and writting recovery.img</CMD>
+
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Update Complete!</CMD>
+	<!-- The below commands will trigger reboot -->
+<!--
+    <CMD state="Updater" type="push" body="$ reboot -f">Done</CMD>
+-->
+</LIST>
+
+<LIST name="Android-QPad-eMMC" desc="Choose eMMC as media">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/splash.img">Sending Splash</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=8192">write Splash to SD card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 0 > /sys/block/mmcblk0boot0/force_ro">access boot partition 1</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-6dl.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0boot0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<CMD state="Updater" type="push" body="$ echo 1 > /sys/block/mmcblk0boot0/force_ro"> re-enable read-only access</CMD>
+	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.3/mmc_host/mmc0/mmc0:0001/boot_config">enable boot partion 1 to boot</CMD>
+	
+	<CMD state="Updater" type="push" body="send" file="mksdcard-android.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard-android.sh /dev/mmcblk0"> Partitioning...</CMD>
+
+	<CMD state="Updater" type="push" body="$ ls -l /dev/mmc*;cat /proc/partitions ">Formatting sd partition</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0p1">write boot.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 -b 4096 -m 0 /dev/mmcblk0p4">Formatting data partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="mk-encryptable-data-android.sh.tar">Sending data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE ">Extracting data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ sh mk-encryptable-data-android.sh /dev/mmcblk0 /dev/mmcblk0p4">Making data encryptable</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p5">Formatting system partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p6">Formatting cache partition</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p7">Formatting device partition</CMD>
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p5 bs=512" file="files/android/system.img">Sending and writting system.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<!-- Write userdata.img is optional, for some customer this is needed, but it's optional. -->
+	<!-- Also, userdata.img will have android unit test, you can use this to do some auto test. -->
+<!--
+	<CMD state="Updater" type="push" onError="ignore" body="pipe dd of=/dev/mmcblk0p7" file="file/android/userdate.img"> Sending userdata.img(optional) </CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+-->
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p2 bs=512" file="files/android/recovery.img">Sending and writting recovery.img</CMD>
+
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Update Complete!</CMD>
+	<!-- The below commands will trigger reboot -->
+    <CMD state="Updater" type="push" body="$ reboot -f">Done</CMD>
+</LIST>
+
+<LIST name="Android-QPadV3-OTP" desc="Write otp register (Board ID,revision,Boot option)">  
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+    <CMD state="Updater" type="push" body="$ ls -la /sys/fsl_otp ">Dumping HW_OCOTP fuse bank options</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x0000b300 > /sys/fsl_otp/HW_OCOTP_GP1">write 0x0000b300 to HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_GP1">Read value from HW_OCOTP_GP1 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00005860 > /sys/fsl_otp/HW_OCOTP_CFG4">write 0x00005860 to HW_OCOTP_CFG4 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG4">Read value from HW_OCOTP_CFG4 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ echo 0x00000010 > /sys/fsl_otp/HW_OCOTP_CFG5">write 0x00000010 to HW_OCOTP_CFG5 fuse bank</CMD>
+    <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG5">Read value from HW_OCOTP_CFG5 fuse bank</CMD>
+		<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+		<CMD state="Updater" type="push" body="$ reboot -f">Done</CMD>
+</LIST>
+<LIST name="Android-SabreSD-eMMC-Kernel" desc="Only Download Android Kernel image">
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="$ ls -l /dev/mmc* ">Formatting sd partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0p1">write boot.img</CMD>
+    <CMD state="Updater" type="push" body="frf">Finish Kernel Download.</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+</LIST>
+
+<LIST name="Android-SabreSD-SD" desc="Choose SD as media">
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk1 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-6dl.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="mksdcard-android.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard-android.sh /dev/mmcblk1"> Partitioning...</CMD>
+
+	<CMD state="Updater" type="push" body="$ ls -l /dev/mmc* ">Formatting sd partition</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1p1">write boot.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 -b 4096 -m 0 /dev/mmcblk1p4">Formatting data partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="mk-encryptable-data-android.sh.tar">Sending data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE ">Extracting data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ sh mk-encryptable-data-android.sh /dev/mmcblk1 /dev/mmcblk1p4">Making data encryptable</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk1p5">Formatting system partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk1p6">Formatting cache partition</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk1p7">Formatting device partition</CMD>
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk1p5 bs=512" file="files/android/system.img">Sending and writting system.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<!-- Write userdata.img is optional, for some customer this is needed, but it's optional. -->
+	<!-- Also, userdata.img will have android unit test, you can use this to do some auto test. -->
+	<!-- <CMD state="Updater" type="push" onError="ignore" body="pipe dd of=/dev/mmcblk0p7" file="file/android/userdate.img"> Sending userdata.img(optional) </CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD> -->
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk1p2 bs=512" file="files/android/recovery.img">Sending and writting recovery.img</CMD>
+
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+</LIST>
+
+<LIST name="Android-SabreSD-SD-Kernel" desc="Only Download Android Kernel image">
+    <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
+    <CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+        loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+    <CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+    <CMD state="Updater" type="push" body="$ ls -l /dev/mmc* ">Formatting sd partition</CMD>
+    <CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+    <CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk1p1">write boot.img</CMD>
+    <CMD state="Updater" type="push" body="frf">Finish Kernel Download.</CMD>
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+ <!--
+    The below commands will trigger reboot
+    <CMD type="push" body="!3">Done</CMD>
+ -->
+</LIST>
+
+<LIST name="MX6DL-Sabreauto-SPI_NOR & SD card" desc="Choose SPI-NOR/SD as media">
+	<CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabreauto-spi-nor.bin" >Loading uboot.</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD> 
+
+	<!--burn the uboot to SPI-NOR: -->
+	<CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabreauto-spi-nor.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd0 bs=512">write U-Boot to SPI-NOR</CMD>
+
+	<!-- partitioning the SD card: -->
+	<CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk0"> Partitioning SD card now...</CMD>
+
+	<!-- burn the kernel: -->
+	<CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+
+	<!-- burn the rootfs: -->
+	<CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk0p1">Formatting rootfs partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/>
+	<CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk0p1 /mnt/mmcblk0p1"/>
+	<CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk0p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+	<CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1">Unmounting rootfs partition</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+
+<LIST name="MX6DL-Sabreauto-Parallel_NOR" desc="Choose Parallel-NOR as media">
+	  <!--
+	    boot dip settings for WEIM-NOR boot:
+	    SW2: dip 3 is on. Others are off
+	    SW1: dip 5 is on. Others are off
+	  -->
+
+	<CMD state="BootStrap" type="boot" body="Bootstrap" file ="u-boot-mx6dl-sabreauto-weimnor.bin" >Loading uboot.</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+	<!--burn the uboot to Parallel-NOR: -->	
+	<CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabreauto-weimnor.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd0 bs=128K">write U-Boot to WEIM-NOR</CMD>
+	
+	<!--burn the kernel to Parallel-NOR: -->
+	<CMD state="Updater" type="push" body="$ flash_erase /dev/mtd2 0 0">Erasing Kernel partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/uImage ">Sending kernel image to weim nor</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd2 bs=128K">write kernel Image to weim nor</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+<LIST name="MX6DL-Sabreauto-NAND" desc="Choose NAND as media">
+
+	<CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+	<CMD state="BootStrap" type="boot" body="Recovery" file ="u-boot-mx6dl-sabreauto-nand.bin" >Loading uboot.</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+	<CMD state="BootStrap" type="find" body="Updater" timeout="180"/>
+
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd0">Erasing Boot partition</CMD>
+
+	<!--burn the uboot to NAND: -->	
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6dl-sabreauto-nand.bin">Sending U-Boot</CMD>	
+	<CMD state="Updater" type="push" body="$ kobs-ng init --chip_0_device_path=/dev/mtd0 $FILE">Flashing Bootloader</CMD>
+
+	<!--burn the kernel to NAND: -->
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd1">Erasing Kernel partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/uImage">Sending Kernel Image</CMD>
+	<CMD state="Updater" type="push" body="$ nandwrite /dev/mtd1 -p $FILE">Flashing Kernel</CMD>
+
+	<!--burn the rootfs to NAND: -->
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd2">Erasing rootfs partition</CMD>
+	<CMD state="Updater" type="push" body="$ ubiformat /dev/mtd2"/>
+	<CMD state="Updater" type="push" body="$ ubiattach /dev/ubi_ctrl -m 2">Attaching UBI partition</CMD>
+	<CMD state="Updater" type="push" body="$ ubimkvol /dev/ubi0 -Nrootfs -s67108864"/>
+	<CMD state="Updater" type="push" body="$ mkdir -p /mnt/mtd2"/>
+	<CMD state="Updater" type="push" body="$ mount -t ubifs ubi0:rootfs /mnt/mtd2"/>
+	<CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mtd2" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+	<CMD state="Updater" type="push" body="$ umount /mnt/mtd2">Unmounting rootfs partition</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+<LIST name="MX6SOLO-Sabreauto-SPI_NOR & SD card" desc="Choose SPI-NOR/SD as media">
+	<CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6solo-sabreauto-spi-nor.bin" >Loading uboot.</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD> 
+
+	<!--burn the uboot to SPI-NOR: -->
+	<CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabreauto-spi-nor.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd0 bs=512">write U-Boot to SPI-NOR</CMD>
+
+	<!-- partitioning the SD card: -->
+	<CMD state="Updater" type="push" body="send" file="mksdcard.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard.sh /dev/mmcblk0"> Partitioning SD card now...</CMD>
+
+	<!-- burn the kernel: -->
+	<CMD state="Updater" type="push" body="send" file="files/uImage">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=1M seek=1 conv=fsync">write kernel image to sd card</CMD>
+
+	<!-- burn the rootfs: -->
+	<CMD state="Updater" type="push" body="$ mkfs.ext3 -j /dev/mmcblk0p1">Formatting rootfs partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/>
+	<CMD state="Updater" type="push" body="$ mount -t ext3 /dev/mmcblk0p1 /mnt/mmcblk0p1"/>
+	<CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mmcblk0p1" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+	<CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1">Unmounting rootfs partition</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+
+<LIST name="MX6SOLO-Sabreauto-Parallel_NOR" desc="Choose Parallel-NOR as media">
+	  <!--
+	    boot dip settings for WEIM-NOR boot:
+	    SW2: dip 3 is on. Others are off
+	    SW1: dip 5 is on. Others are off
+	  -->
+
+	<CMD state="BootStrap" type="boot" body="Bootstrap" file ="u-boot-mx6solo-sabreauto-weimnor.bin" >Loading uboot.</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+	<!--burn the uboot to Parallel-NOR: -->	
+	<CMD state="Updater" type="push" body="$ flash_erase /dev/mtd0 0 0">Erasing Boot partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabreauto-weimnor.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd0 bs=128K">write U-Boot to WEIM-NOR</CMD>
+	
+	<!--burn the kernel to Parallel-NOR: -->
+	<CMD state="Updater" type="push" body="$ flash_erase /dev/mtd2 0 0">Erasing Kernel partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/uImage ">Sending kernel image to weim nor</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mtd2 bs=128K">write kernel Image to weim nor</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+<LIST name="MX6SOLO-Sabreauto-NAND" desc="Choose NAND as media">
+
+	<CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+	<CMD state="BootStrap" type="boot" body="Recovery" file ="u-boot-mx6solo-sabreauto-nand.bin" >Loading uboot.</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Doing Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+	<CMD state="BootStrap" type="find" body="Updater" timeout="180"/>
+
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd0">Erasing Boot partition</CMD>
+
+	<!--burn the uboot to NAND: -->	
+	<CMD state="Updater" type="push" body="send" file="files/u-boot-mx6solo-sabreauto-nand.bin">Sending U-Boot</CMD>	
+	<CMD state="Updater" type="push" body="$ kobs-ng init --chip_0_device_path=/dev/mtd0 $FILE">Flashing Bootloader</CMD>
+
+	<!--burn the kernel to NAND: -->
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd1">Erasing Kernel partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/uImage">Sending Kernel Image</CMD>
+	<CMD state="Updater" type="push" body="$ nandwrite /dev/mtd1 -p $FILE">Flashing Kernel</CMD>
+
+	<!--burn the rootfs to NAND: -->
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd2">Erasing rootfs partition</CMD>
+	<CMD state="Updater" type="push" body="$ ubiformat /dev/mtd2"/>
+	<CMD state="Updater" type="push" body="$ ubiattach /dev/ubi_ctrl -m 2">Attaching UBI partition</CMD>
+	<CMD state="Updater" type="push" body="$ ubimkvol /dev/ubi0 -Nrootfs -s67108864"/>
+	<CMD state="Updater" type="push" body="$ mkdir -p /mnt/mtd2"/>
+	<CMD state="Updater" type="push" body="$ mount -t ubifs ubi0:rootfs /mnt/mtd2"/>
+	<CMD state="Updater" type="push" body="pipe tar -jxv -C /mnt/mtd2" file="files/rootfs.tar.bz2">Sending and writting rootfs</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+	<CMD state="Updater" type="push" body="$ umount /mnt/mtd2">Unmounting rootfs partition</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+<LIST name="Android-MX6DL-SabreAuto-SD" desc="Choose SD android as media">
+	<CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+	<CMD state="BootStrap" type="boot" body="Recovery" file ="u-boot-mx6dl-sabreauto-spi-nor.bin" >Loading U-boot</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+
+	<CMD state="Updater" type="push" body="$ dd if=/dev/zero of=/dev/mmcblk0 bs=512 seek=1536 count=16">clean up u-boot parameter</CMD>
+	<!--
+	<CMD state="Updater" type="push" body="$ echo 1 > /sys/devices/platform/sdhci-esdhc-imx.2/mmc_host/mmc0/mmc0:0001/boot_config">access boot partition 1</CMD>
+	-->
+	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-mx6dl.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0 bs=512 seek=2 skip=2">write U-Boot to sd card</CMD>
+	<!--
+	<CMD state="Updater" type="push" body="$ echo 8 > /sys/devices/platform/sdhci-esdhc-imx.2/mmc_host/mmc0/mmc0:0001/boot_config">access user partition and enable boot partion 1 to boot</CMD>
+	-->
+	<CMD state="Updater" type="push" body="send" file="mksdcard-android.sh.tar">Sending partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE "> Partitioning...</CMD>
+	<CMD state="Updater" type="push" body="$ sh mksdcard-android.sh /dev/mmcblk0"> Partitioning...</CMD>
+
+	<CMD state="Updater" type="push" body="$ ls -l /dev/mmc* ">Formatting sd partition</CMD>
+
+	<CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending kernel uImage</CMD>
+	<CMD state="Updater" type="push" body="$ dd if=$FILE of=/dev/mmcblk0p1">write boot.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 -b 4096 -m 0 /dev/mmcblk0p4">Formatting data partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="mk-encryptable-data-android.sh.tar">Sending data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ tar xf $FILE ">Extracting data partition shell</CMD>
+	<CMD state="Updater" type="push" body="$ sh mk-encryptable-data-android.sh /dev/mmcblk0 /dev/mmcblk0p4">Making data encryptable</CMD>
+
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p5">Formatting system partition</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p6">Formatting cache partition</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<CMD state="Updater" type="push" body="$ mkfs.ext4 /dev/mmcblk0p7">Formatting device partition</CMD>
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p5 bs=512" file="files/android/system.img">Sending and writting system.img</CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+	<!-- Write userdata.img is optional, for some customer this is needed, but it's optional. -->
+	<!-- Also, userdata.img will have android unit test, you can use this to do some auto test. -->
+<!--	<CMD state="Updater" type="push" onError="ignore" body="pipe dd of=/dev/mmcblk0p7" file="file/android/userdate.img"> Sending userdata.img(optional) </CMD>
+	<CMD state="Updater" type="push" body="frf">flush the memory.</CMD>  -->
+	<CMD state="Updater" type="push" body="pipe dd of=/dev/mmcblk0p2 bs=512" file="files/android/recovery.img">Sending and writting recovery.img</CMD>
+
+	<CMD state="Updater" type="push" body="frf">Finishing rootfs write</CMD>
+
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+</LIST>
+
+<LIST name="Android-MX6DL-SabreAuto-NAND" desc="Choose NAND as media">
+	<CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+	<CMD state="BootStrap" type="boot" body="Recovery" file ="u-boot-mx6dl-sabreauto-nand.bin" >Loading U-boot</CMD>
+	<CMD state="BootStrap" type="load" file="uImage" address="0x10800000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Kernel.</CMD>
+	<CMD state="BootStrap" type="load" file="initramfs.cpio.gz.uboot" address="0x10C00000"
+		loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading Initramfs.</CMD>
+	<CMD state="BootStrap" type="jump" > Jumping to OS image. </CMD>
+	<CMD state="BootStrap" type="find" body="Updater" timeout="180"/>
+<!--
+	Please use "cat /proc/mtd" to check the right partitions for NAND
+-->
+	<CMD state="Updater" type="push" body="$ ls -l /dev/mtd*">List MTD partition</CMD>
+	<CMD state="Updater" type="push" body="$ cat /proc/mtd ">Cat MTD partition</CMD>
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd0">Erasing Boot partition</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/u-boot-mx6dl-nand.bin">Sending U-Boot</CMD>
+	<CMD state="Updater" type="push" body="$ kobs-ng init $FILE">write U-Boot to NAND</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing U-Boot write</CMD>
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd1">Erasing Kernel partition</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing Kernel partition Erasing</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/boot.img">Sending Kernel Image</CMD>
+	<CMD state="Updater" type="push" body="$ nandwrite -p /dev/mtd1 $FILE">Flashing Kernel</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing Kernel write</CMD>
+	<CMD state="Updater" type="push" body="$ flash_eraseall /dev/mtd2">Erasing Recovery partition</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing Recovery partition Erasing</CMD>
+	<CMD state="Updater" type="push" body="send" file="files/android/recovery.img">Sending recovery Image</CMD>
+	<CMD state="Updater" type="push" body="$ nandwrite -p /dev/mtd2 $FILE">Flashing recovery</CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing recovery write</CMD>
+	<CMD state="Updater" type="push" body="pipe ubiformat -y /dev/mtd3 -f - -S @FILESIZE"
+		file="files/android/android_root.img"> Programming Android Root partition </CMD>
+	<CMD state="Updater" type="push" body="frf">Finishing Android Root partition write</CMD>
+	<CMD state="Updater" type="push" body="$ ubiattach /dev/ubi_ctrl -m 3">Attaching UBI partition</CMD>
+	<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+<!--
+	The below commands will trigger reboot
+	<CMD type="push" body="!3">Done</CMD>
+-->
+</LIST>
+</UCL>
