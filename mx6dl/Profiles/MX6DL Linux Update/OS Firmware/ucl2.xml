@@ -624,7 +624,10 @@ Notes for the files to be programmed:
 
 	<CMD state="Updater" type="push" body="$ echo Update Complete!">Update Complete!</CMD>
 	<!-- The below commands will trigger reboot -->
+<!--
     <CMD state="Updater" type="push" body="$ reboot -f">Done</CMD>
+-->
+ 
 </LIST>
 
 <LIST name="Android-QPadV3-OTP" desc="Write otp register (Board ID,revision,Boot option)">  
@@ -642,7 +645,6 @@ Notes for the files to be programmed:
     <CMD state="Updater" type="push" body="$ echo 0x00000010 > /sys/fsl_otp/HW_OCOTP_CFG5">write 0x00000010 to HW_OCOTP_CFG5 fuse bank</CMD>
     <CMD state="Updater" type="push" body="$ cat /sys/fsl_otp/HW_OCOTP_CFG5">Read value from HW_OCOTP_CFG5 fuse bank</CMD>
 		<CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
-		<CMD state="Updater" type="push" body="$ reboot -f">Done</CMD>
 </LIST>
 <LIST name="Android-SabreSD-eMMC-Kernel" desc="Only Download Android Kernel image">
     <CMD state="BootStrap" type="boot" body="BootStrap" file ="u-boot-mx6dl-sabresd.bin" >Loading U-boot</CMD>
